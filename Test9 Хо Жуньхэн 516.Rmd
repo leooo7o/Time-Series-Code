@@ -1,0 +1,66 @@
+---
+title: "Test9 Хо Жуньхэн 516"
+output: html_document
+date: "2024-04-17"
+---
+```{r setup}
+knitr::opts_chunk$set(warning = FALSE)
+```
+## Test8
+Установка пакета library:
+```{r,message=FALSE, warning=FALSE}
+library(bsts)
+library(xts)
+```
+Фиксированные случайные числа и количество итераций:
+```{r}
+set.seed(1)
+niter = 500
+```
+Импорт данных:
+```{r}
+data<- read.csv("D:/data12.csv")
+data<- na.omit(data)
+data$Дата <- as.Date(data[,1],"%Y/%m/%d")
+larain <- data$Значение                       
+```
+Используются модель локального линейного тренда и сезонность:
+```{r}
+ss <- AddLocalLinearTrend(list(), data$Значение)
+ss <- AddSeasonal(ss, data$Значение, nseasons = 12)    
+```
+Моделирование:
+```{r}
+model.simple <- bsts(larain, state.specification = ss, niter = niter)
+```
+Постройте прогноз на 12 интервалов времени вперед:
+```{r}
+pred.simple<- predict.bsts(model.simple, horizon = 12, burn = SuggestBurn(0.5,model.simple))
+```
+Рисование прогнозов:
+```{r}
+plot(pred.simple, plot.original = 20,ylab='Inches') 
+```
+
+Создание новых переменных:
+```{r}
+n<-length(data[,1])
+data$epsilon<-rnorm(n, mean = 0, sd = 1)
+data$z<-data$Значение+data$epsilon+0.5
+```
+Модель с экстра аргументом expected.model.size= 1:
+```{r}
+model1 <- bsts(Значение~ z + epsilon, state.specification = ss, data = data, niter = niter, expected.model.size = 1)                         
+
+```
+Модель с ожидаемым числом предикторов expected.model.size= 2:
+```{r}
+model2 <- bsts(Значение~ z + epsilon, state.specification = ss, data = data, niter = niter, expected.model.size = 2)                      
+
+```
+Графически изобразить значимость:
+```{r}
+plot(model1, "coef")
+plot(model2, "coef")                         
+
+```
